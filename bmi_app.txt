@@ -1,0 +1,331 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart'; // For scheduling a future action
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'BMI App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: SplashScreen(),
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+
+    // Navigate to the HomeScreen after the splash screen
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(Duration(seconds: 3), () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+        );
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.pinkAccent, Colors.blueAccent],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: FadeTransition(
+            opacity: _animation,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.fitness_center, // Health-related icon
+                  size: 120, // Adjust size as needed
+                  color: Colors.white, // Color of the icon
+                ),
+                SizedBox(height: 20), // Space between icon and text
+                Text(
+                  'BMI',
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 2.0, // Spacing between letters
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+}
+
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
+  String _bmiResult = '';
+
+  void _calculateBMI() {
+    String heightText = _heightController.text;
+    String weightText = _weightController.text;
+    String nameText = _nameController.text;
+
+    if (heightText.isNotEmpty && weightText.isNotEmpty && nameText.isNotEmpty) {
+      double height = double.parse(heightText) * 0.3048; // Convert feet to meters
+      double weight = double.parse(weightText);
+
+      double bmi = weight / (height * height);
+      String category;
+
+      if (bmi < 18.5) {
+        category = "Underweight";
+      } else if (bmi < 24.9) {
+        category = "Normal weight";
+      } else if (bmi < 29.9) {
+        category = "Overweight";
+      } else {
+        category = "Obese";
+      }
+
+      String bmiResult = "Your BMI is ${bmi.toStringAsFixed(2)} ($category)";
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ThirdScreen(
+            name: nameText,
+            height: heightText,
+            weight: weightText,
+            bmiResult: bmiResult,
+          ),
+        ),
+      );
+    } else {
+      setState(() {
+        _bmiResult = "Please enter your name, height, and weight";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("BMI APPLICATION"),
+        backgroundColor: Colors.amberAccent,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.blueAccent, Colors.blueGrey[200]!],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  hintText: "Enter your name",
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide(color: Colors.blue, width: 2.0),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: _heightController,
+                decoration: InputDecoration(
+                  hintText: "Enter your height in feet",
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide(color: Colors.blue, width: 2.0),
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: _weightController,
+                decoration: InputDecoration(
+                  hintText: "Enter your weight in kg",
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide(color: Colors.blue, width: 2.0),
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              SizedBox(height: 20),
+              Center(
+                child: ElevatedButton(
+                  onPressed: _calculateBMI,
+                  child: Text('Submit'),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              Text(
+                _bmiResult,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ThirdScreen extends StatelessWidget {
+  final String name;
+  final String height;
+  final String weight;
+  final String bmiResult;
+
+  ThirdScreen({
+    required this.name,
+    required this.height,
+    required this.weight,
+    required this.bmiResult,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("BMI Result"),
+        backgroundColor: Colors.deepPurple,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.purpleAccent, Colors.deepPurpleAccent],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: Card(
+            margin: EdgeInsets.symmetric(horizontal: 16.0),
+            elevation: 8.0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.0),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Name: $name',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Height: $height feet',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Weight: $weight kg',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Your BMI is:',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    bmiResult,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.redAccent,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
